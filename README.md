@@ -3,7 +3,8 @@
 An interactive tool for visualizing graph algorithms with a clean, modern interface.  
 Интерактивный инструмент для визуализации алгоритмов на графах с современным интерфейсом.
 
-![Graph Builder Screenshot](screenshot.png) <!-- Add your screenshot here if available -->
+![Graph Builder Screenshot](<img width="978" height="920" alt="image" src="https://github.com/user-attachments/assets/46ebc93a-f984-4d84-b9ba-3c15c5e194dd" />
+) <!-- Add your screenshot here if available -->
 
 ## Features / Возможности
 
