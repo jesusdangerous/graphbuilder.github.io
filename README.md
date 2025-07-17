@@ -1,4 +1,4 @@
-# Graph Builder - Interactive Algorithm Visualizer
+# MVP Graph Builder - Interactive Algorithm Visualizer
 
 An interactive tool for visualizing graph algorithms with a clean, modern interface.  
 Интерактивный инструмент для визуализации алгоритмов на графах с современным интерфейсом.
