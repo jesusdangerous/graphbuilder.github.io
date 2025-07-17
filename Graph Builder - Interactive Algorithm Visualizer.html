@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Builder - Interactive Algorithm Visualizer</title>
+    <style>
+        :root {
+            --bg-primary: #111;
+            --bg-secondary: #1a1a1a;
+            --bg-panel: #222;
+            --blue: #2d6cdf;
+            --purple: #a259f7;
+            --blue-hover: #4a7ce6;
+            --purple-hover: #b366f8;
+            --text: #fff;
+            --text-secondary: #ccc;
+            --border: #333;
+            --shadow: rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--blue);
+            margin-bottom: 5px;
+        }
+
+        .sidebar-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .btn {
+            background: var(--blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            margin: 4px;
+            width: calc(100% - 8px);
+        }
+
+        .btn:hover {
+            background: var(--blue-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn.purple {
+            background: var(--purple);
+        }
+
+        .btn.purple:hover {
+            background: var(--purple-hover);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-group .btn {
+            flex: 1;
+            width: auto;
+        }
+
+        .toggle-btn {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .toggle-btn.active {
+            background: var(--purple);
+            border-color: var(--purple);
+        }
+
+        .main-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .canvas-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            background: var(--bg-primary);
+        }
+
+        #graph-canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        .floating-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .fab {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--blue);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .fab:hover {
+            background: var(--blue-hover);
+            transform: scale(1.1);
+        }
+
+        .fab.purple {
+            background: var(--purple);
+        }
+
+        .fab.purple:hover {
+            background: var(--purple-hover);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--bg-panel);
+            width: 90%;
+            max-width: 600px;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            color: var(--blue);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .theory-section {
+            margin-bottom: 25px;
+        }
+
+        .theory-section h3 {
+            color: var(--purple);
+            margin-bottom: 10px;
+        }
+
+        .theory-section p {
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .algorithm-status {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: var(--bg-panel);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            border: 1px solid var(--border);
+            display: none;
+        }
+
+        .status-running {
+            color: var(--blue);
+        }
+
+        .status-complete {
+            color: var(--purple);
+        }
+
+        .toggle-sidebar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .speed-slider {
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            appearance: none;
+            outline: none;
+        }
+
+        .speed-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--blue);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .speed-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--blue);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .kuse-branding {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            z-index: 100;
+        }
+
+        .kuse-branding:hover {
+            color: var(--blue);
+        }
+
+        .kuse-branding svg {
+            height: 1.2em;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                left: 0;
+                top: 0;
+                height: 100%;
+                z-index: 200;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .floating-controls {
+                flex-direction: column;
+            }
+
+            .kuse-branding {
+                bottom: 80px;
+            }
+        }
+    </style>
+<style id="kgp-selected-style">
+  [data-kgp-selected]::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    width: 100%;
+    height: 100%;
+    box-sizing: content-box;
+    padding: 4px;
+    border-radius: 4px;
+    outline: 3px solid #FF6B35 !important;
+    box-shadow: 0 0 0 1px rgba(255, 107, 53, 0.3), 0 0 10px rgba(255, 107, 53, 0.4) !important;
+    z-index: 10000;
+    pointer-events: none;
+  }
+
+  [data-kgp-selected] {
+    position: relative;
+    outline: none;
+    cursor: default;
+  }
+
+  img[data-kgp-selected],
+  img[data-kgp-hover-selected],
+  [data-kgp-hover-selected],
+  [item-kgp-click-selected],
+  [item-kgp-selected] {
+    border: 3px solid #FF6B35 !important;
+    box-shadow: 0 0 0 1px rgba(255, 107, 53, 0.3), 0 0 15px rgba(255, 107, 53, 0.5) !important;
+    border-radius: 4px;
+  }
+
+  [data-kgp-hover-selected]::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: 100%;
+    height: 100%;
+    box-sizing: content-box;
+    padding: 2px;
+    border-radius: 4px;
+    outline: 2px solid #FFA366 !important;
+    box-shadow: 0 0 0 1px rgba(255, 163, 102, 0.3), 0 0 8px rgba(255, 163, 102, 0.4) !important;
+    z-index: 9999;
+    pointer-events: none;
+  }
+
+  [data-kgp-hover-selected] {
+    position: relative;
+    outline: none;
+  }
+</style><script type="text/javascript" async="" src="./Graph Builder - Interactive Algorithm Visualizer_files/mixpanel-2-latest.min.js"></script><script src="./Graph Builder - Interactive Algorithm Visualizer_files/html2pdf.bundle.min.js"></script><script src="./Graph Builder - Interactive Algorithm Visualizer_files/html-docx.js"></script><script src="./Graph Builder - Interactive Algorithm Visualizer_files/ua-parser.min.js"></script></head>
+<body>
+    <div class="app-container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">Graph Builder</div>
+                <div class="sidebar-subtitle">Interactive Algorithm Visualizer</div>
+            </div>
+
+            <div class="control-group">
+                <h3>Graph Controls</h3>
+                <button class="btn" onclick="clearGraph()">Clear Graph</button>
+                <div class="btn-group">
+                    <button class="btn toggle-btn" id="directed-toggle" onclick="toggleDirected()">Directed</button>
+                    <button class="btn toggle-btn active" id="undirected-toggle" onclick="toggleUndirected()">Undirected</button>
+                </div>
+                <button class="btn purple" onclick="addSampleGraph()">Sample Graph</button>
+            </div>
+
+            <div class="control-group">
+                <h3>Algorithms</h3>
+                <button class="btn" onclick="runDijkstra()">Run Dijkstra</button>
+                <button class="btn" onclick="runBFS()">Run BFS</button>
+                <button class="btn" onclick="runDFS()">Run DFS</button>
+                <button class="btn purple" onclick="stopAlgorithm()">Stop</button>
+                <div class="speed-control">
+                    <label style="font-size: 12px; color: var(--text-secondary);">Speed:</label>
+                    <input type="range" class="speed-slider" id="speed-slider" min="1" max="10" value="5">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Export</h3>
+                <button class="btn" onclick="exportPNG()">Export as PNG</button>
+                <button class="btn" onclick="exportJSON()">Export as JSON</button>
+                <button class="btn purple" onclick="importJSON()">Import JSON</button>
+            </div>
+
+            <div class="control-group">
+                <h3>Help</h3>
+                <button class="btn purple" onclick="showTheory()">View Theory</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <button class="fab toggle-sidebar" onclick="toggleSidebar()">≡</button>
+            
+            <div class="canvas-container">
+                <canvas id="graph-canvas" width="1256" height="740"></canvas>
+            </div>
+
+            <div class="algorithm-status " id="algorithm-status" style="display: none;">Sample graph loaded with source and target selected</div>
+        </div>
+    </div>
+
+    <!-- Theory Modal -->
+    <div class="modal" id="theory-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Graph Theory &amp; Algorithms</h2>
+                <button class="close-btn" onclick="hideTheory()">×</button>
+            </div>
+            
+            <div class="theory-section">
+                <h3>What is a Graph?</h3>
+                <p>A graph is a mathematical structure consisting of vertices (nodes) connected by edges (links). Graphs can be directed (edges have direction) or undirected (edges are bidirectional). They're fundamental in computer science for modeling relationships, networks, and solving complex problems.</p>
+            </div>
+
+            <div class="theory-section">
+                <h3>Dijkstra's Algorithm</h3>
+                <p>Dijkstra's algorithm finds the shortest path between nodes in a weighted graph. It works by maintaining a set of unvisited nodes and repeatedly selecting the node with the smallest known distance from the source. The algorithm guarantees the shortest path in graphs with non-negative edge weights.</p>
+                <p><strong>Time Complexity:</strong> O((V + E) log V) where V is vertices and E is edges.</p>
+                <p><strong>Use Cases:</strong> GPS navigation, network routing, social network analysis.</p>
+            </div>
+
+            <div class="theory-section">
+                <h3>Breadth-First Search (BFS)</h3>
+                <p>BFS explores a graph level by level, visiting all neighbors of a node before moving to the next level. It uses a queue data structure and is guaranteed to find the shortest path in unweighted graphs. BFS is excellent for finding the minimum number of steps to reach a goal.</p>
+                <p><strong>Time Complexity:</strong> O(V + E)</p>
+                <p><strong>Use Cases:</strong> Finding shortest path in unweighted graphs, web crawling, social network friend suggestions.</p>
+            </div>
+
+            <div class="theory-section">
+                <h3>Depth-First Search (DFS)</h3>
+                <p>DFS explores as far as possible along each branch before backtracking. It uses a stack (or recursion) and is useful for detecting cycles, topological sorting, and finding connected components. DFS doesn't guarantee the shortest path but is memory efficient.</p>
+                <p><strong>Time Complexity:</strong> O(V + E)</p>
+                <p><strong>Use Cases:</strong> Cycle detection, topological sorting, maze solving, finding connected components.</p>
+            </div>
+
+            <div class="theory-section">
+                <h3>How to Use This App</h3>
+                <p><strong>Creating Nodes:</strong> Click anywhere on the canvas to create a new node.</p>
+                <p><strong>Creating Edges:</strong> Click and drag from one node to another to create an edge.</p>
+                <p><strong>Deleting:</strong> Right-click on nodes or edges to delete them.</p>
+                <p><strong>Running Algorithms:</strong> Select source and target nodes by clicking them, then run any algorithm.</p>
+                <p><strong>Visualization:</strong> Watch as algorithms explore the graph step by step, with different colors showing visited nodes and the final path.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Graph data structure and state
+        let graph = {
+            nodes: [],
+            edges: [],
+            directed: false,
+            nextId: 1
+        };
+
+        let canvas, ctx;
+        let mousePos = { x: 0, y: 0 };
+        let selectedNode = null;
+        let sourceNode = null;
+        let targetNode = null;
+        let draggedNode = null;
+        let isCreatingEdge = false;
+        let algorithm = null;
+        let animationSpeed = 500;
+
+        // Colors
+        const colors = {
+            node: `#2d6cdf`,
+            nodeHover: `#4a7ce6`,
+            nodeSelected: `#a259f7`,
+            nodeVisited: `#8b5cf6`,
+            nodePath: `#10b981`,
+            edge: `#666`,
+            edgeHighlight: `#a259f7`,
+            edgePath: `#10b981`,
+            text: `#fff`,
+            background: `#111`
+        };
+
+        // Initialize canvas
+        function initCanvas() {
+            canvas = document.getElementById(`graph-canvas`);
+            ctx = canvas.getContext(`2d`);
+            
+            function resizeCanvas() {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                draw();
+            }
+            
+            resizeCanvas();
+            window.addEventListener(`resize`, resizeCanvas);
+            
+            // Mouse events
+            canvas.addEventListener(`mousedown`, onMouseDown);
+            canvas.addEventListener(`mousemove`, onMouseMove);
+            canvas.addEventListener(`mouseup`, onMouseUp);
+            canvas.addEventListener(`contextmenu`, onRightClick);
+            
+            // Touch events for mobile
+            canvas.addEventListener(`touchstart`, onTouchStart);
+            canvas.addEventListener(`touchmove`, onTouchMove);
+            canvas.addEventListener(`touchend`, onTouchEnd);
+            
+            // Speed control
+            document.getElementById(`speed-slider`).addEventListener(`input`, (e) => {
+                animationSpeed = 1100 - (e.target.value * 100);
+            });
+        }
+
+        // Node class
+        class Node {
+            constructor(x, y, id) {
+                this.x = x;
+                this.y = y;
+                this.id = id;
+                this.label = id.toString();
+                this.radius = 25;
+                this.color = colors.node;
+                this.visited = false;
+                this.distance = Infinity;
+                this.parent = null;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = colors.text;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.fillStyle = colors.text;
+                ctx.font = `14px Arial`;
+                ctx.textAlign = `center`;
+                ctx.textBaseline = `middle`;
+                ctx.fillText(this.label, this.x, this.y);
+            }
+
+            contains(x, y) {
+                const dx = x - this.x;
+                const dy = y - this.y;
+                return dx * dx + dy * dy <= this.radius * this.radius;
+            }
+
+            reset() {
+                this.visited = false;
+                this.distance = Infinity;
+                this.parent = null;
+                this.color = colors.node;
+            }
+        }
+
+        // Edge class
+        class Edge {
+            constructor(from, to, weight = 1) {
+                this.from = from;
+                this.to = to;
+                this.weight = weight;
+                this.color = colors.edge;
+                this.highlighted = false;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.from.x, this.from.y);
+                ctx.lineTo(this.to.x, this.to.y);
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = this.highlighted ? 3 : 2;
+                ctx.stroke();
+                
+                if (graph.directed) {
+                    this.drawArrow();
+                }
+                
+                // Draw weight
+                const midX = (this.from.x + this.to.x) / 2;
+                const midY = (this.from.y + this.to.y) / 2;
+                ctx.fillStyle = colors.text;
+                ctx.font = `12px Arial`;
+                ctx.textAlign = `center`;
+                ctx.textBaseline = `middle`;
+                ctx.fillText(this.weight.toString(), midX, midY - 10);
+            }
+
+            drawArrow() {
+                const angle = Math.atan2(this.to.y - this.from.y, this.to.x - this.from.x);
+                const arrowLength = 15;
+                const arrowAngle = Math.PI / 6;
+                
+                const endX = this.to.x - Math.cos(angle) * this.to.radius;
+                const endY = this.to.y - Math.sin(angle) * this.to.radius;
+                
+                ctx.beginPath();
+                ctx.moveTo(endX, endY);
+                ctx.lineTo(
+                    endX - arrowLength * Math.cos(angle - arrowAngle),
+                    endY - arrowLength * Math.sin(angle - arrowAngle)
+                );
+                ctx.moveTo(endX, endY);
+                ctx.lineTo(
+                    endX - arrowLength * Math.cos(angle + arrowAngle),
+                    endY - arrowLength * Math.sin(angle + arrowAngle)
+                );
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            contains(x, y) {
+                const threshold = 10;
+                const dx = this.to.x - this.from.x;
+                const dy = this.to.y - this.from.y;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                
+                const dot = ((x - this.from.x) * dx + (y - this.from.y) * dy) / (length * length);
+                
+                if (dot < 0 || dot > 1) return false;
+                
+                const projX = this.from.x + dot * dx;
+                const projY = this.from.y + dot * dy;
+                
+                const distance = Math.sqrt((x - projX) * (x - projX) + (y - projY) * (y - projY));
+                return distance <= threshold;
+            }
+
+            reset() {
+                this.color = colors.edge;
+                this.highlighted = false;
+            }
+        }
+
+        // Mouse event handlers
+        function onMouseDown(e) {
+            const rect = canvas.getBoundingClientRect();
+            mousePos.x = e.clientX - rect.left;
+            mousePos.y = e.clientY - rect.top;
+            
+            const node = findNodeAt(mousePos.x, mousePos.y);
+            
+            if (node) {
+                if (e.shiftKey) {
+                    // Select source/target for algorithms
+                    if (!sourceNode) {
+                        sourceNode = node;
+                        node.color = colors.nodeSelected;
+                        showStatus(`Source node selected: ${node.label}`);
+                    } else if (!targetNode && node !== sourceNode) {
+                        targetNode = node;
+                        node.color = colors.nodeSelected;
+                        showStatus(`Target node selected: ${node.label}`);
+                    } else {
+                        resetSelection();
+                    }
+                } else {
+                    // Start dragging or creating edge
+                    selectedNode = node;
+                    draggedNode = node;
+                    isCreatingEdge = true;
+                }
+            } else {
+                // Create new node
+                createNode(mousePos.x, mousePos.y);
+            }
+            
+            draw();
+        }
+
+        function onMouseMove(e) {
+            const rect = canvas.getBoundingClientRect();
+            mousePos.x = e.clientX - rect.left;
+            mousePos.y = e.clientY - rect.top;
+            
+            if (draggedNode && !isCreatingEdge) {
+                draggedNode.x = mousePos.x;
+                draggedNode.y = mousePos.y;
+                draw();
+            }
+            
+            if (isCreatingEdge) {
+                draw();
+                drawTemporaryEdge();
+            }
+        }
+
+        function onMouseUp(e) {
+            if (isCreatingEdge && selectedNode) {
+                const targetNode = findNodeAt(mousePos.x, mousePos.y);
+                if (targetNode && targetNode !== selectedNode) {
+                    createEdge(selectedNode, targetNode);
+                }
+            }
+            
+            selectedNode = null;
+            draggedNode = null;
+            isCreatingEdge = false;
+            draw();
+        }
+
+        function onRightClick(e) {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const node = findNodeAt(x, y);
+            if (node) {
+                removeNode(node);
+            } else {
+                const edge = findEdgeAt(x, y);
+                if (edge) {
+                    removeEdge(edge);
+                }
+            }
+            
+            draw();
+        }
+
+        // Touch event handlers
+        function onTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            mousePos.x = touch.clientX - rect.left;
+            mousePos.y = touch.clientY - rect.top;
+            
+            const node = findNodeAt(mousePos.x, mousePos.y);
+            if (node) {
+                selectedNode = node;
+                draggedNode = node;
+            } else {
+                createNode(mousePos.x, mousePos.y);
+            }
+            
+            draw();
+        }
+
+        function onTouchMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            mousePos.x = touch.clientX - rect.left;
+            mousePos.y = touch.clientY - rect.top;
+            
+            if (draggedNode) {
+                draggedNode.x = mousePos.x;
+                draggedNode.y = mousePos.y;
+                draw();
+            }
+        }
+
+        function onTouchEnd(e) {
+            e.preventDefault();
+            selectedNode = null;
+            draggedNode = null;
+            draw();
+        }
+
+        // Graph manipulation functions
+        function createNode(x, y) {
+            const node = new Node(x, y, graph.nextId++);
+            graph.nodes.push(node);
+            return node;
+        }
+
+        function createEdge(from, to) {
+            const existingEdge = graph.edges.find(e => 
+                (e.from === from && e.to === to) || 
+                (!graph.directed && e.from === to && e.to === from)
+            );
+            
+            if (!existingEdge) {
+                const weight = Math.floor(Math.random() * 9) + 1;
+                const edge = new Edge(from, to, weight);
+                graph.edges.push(edge);
+                return edge;
+            }
+        }
+
+        function removeNode(node) {
+            graph.nodes = graph.nodes.filter(n => n !== node);
+            graph.edges = graph.edges.filter(e => e.from !== node && e.to !== node);
+            
+            if (sourceNode === node) sourceNode = null;
+            if (targetNode === node) targetNode = null;
+        }
+
+        function removeEdge(edge) {
+            graph.edges = graph.edges.filter(e => e !== edge);
+        }
+
+        function findNodeAt(x, y) {
+            return graph.nodes.find(node => node.contains(x, y));
+        }
+
+        function findEdgeAt(x, y) {
+            return graph.edges.find(edge => edge.contains(x, y));
+        }
+
+        function drawTemporaryEdge() {
+            if (selectedNode) {
+                ctx.beginPath();
+                ctx.moveTo(selectedNode.x, selectedNode.y);
+                ctx.lineTo(mousePos.x, mousePos.y);
+                ctx.strokeStyle = colors.edgeHighlight;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        // Drawing function
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw edges
+            graph.edges.forEach(edge => edge.draw());
+            
+            // Draw nodes
+            graph.nodes.forEach(node => node.draw());
+        }
+
+        // Algorithm implementations
+        async function runDijkstra() {
+            if (!sourceNode || !targetNode) {
+                showStatus(`Please select source and target nodes (Shift+Click)`);
+                return;
+            }
+            
+            resetGraph();
+            showStatus(`Running Dijkstra's Algorithm...`, `running`);
+            
+            const unvisited = [...graph.nodes];
+            sourceNode.distance = 0;
+            
+            while (unvisited.length > 0) {
+                unvisited.sort((a, b) => a.distance - b.distance);
+                const current = unvisited.shift();
+                
+                if (current.distance === Infinity) break;
+                
+                current.visited = true;
+                current.color = colors.nodeVisited;
+                
+                if (current === targetNode) {
+                    await highlightPath(targetNode);
+                    showStatus(`Path found! Distance: ${targetNode.distance}`, `complete`);
+                    return;
+                }
+                
+                const neighbors = getNeighbors(current);
+                for (const neighbor of neighbors) {
+                    if (!neighbor.visited) {
+                        const edge = findEdgeBetween(current, neighbor);
+                        const newDistance = current.distance + edge.weight;
+                        
+                        if (newDistance < neighbor.distance) {
+                            neighbor.distance = newDistance;
+                            neighbor.parent = current;
+                        }
+                    }
+                }
+                
+                draw();
+                await sleep(animationSpeed);
+            }
+            
+            showStatus(`No path found!`, `complete`);
+        }
+
+        async function runBFS() {
+            if (!sourceNode || !targetNode) {
+                showStatus(`Please select source and target nodes (Shift+Click)`);
+                return;
+            }
+            
+            resetGraph();
+            showStatus(`Running Breadth-First Search...`, `running`);
+            
+            const queue = [sourceNode];
+            sourceNode.visited = true;
+            sourceNode.color = colors.nodeVisited;
+            
+            while (queue.length > 0) {
+                const current = queue.shift();
+                
+                if (current === targetNode) {
+                    await highlightPath(targetNode);
+                    showStatus(`Path found!`, `complete`);
+                    return;
+                }
+                
+                const neighbors = getNeighbors(current);
+                for (const neighbor of neighbors) {
+                    if (!neighbor.visited) {
+                        neighbor.visited = true;
+                        neighbor.parent = current;
+                        neighbor.color = colors.nodeVisited;
+                        queue.push(neighbor);
+                    }
+                }
+                
+                draw();
+                await sleep(animationSpeed);
+            }
+            
+            showStatus(`No path found!`, `complete`);
+        }
+
+        async function runDFS() {
+            if (!sourceNode || !targetNode) {
+                showStatus(`Please select source and target nodes (Shift+Click)`);
+                return;
+            }
+            
+            resetGraph();
+            showStatus(`Running Depth-First Search...`, `running`);
+            
+            const found = await dfsRecursive(sourceNode, targetNode);
+            
+            if (found) {
+                await highlightPath(targetNode);
+                showStatus(`Path found!`, `complete`);
+            } else {
+                showStatus(`No path found!`, `complete`);
+            }
+        }
+
+        async function dfsRecursive(current, target) {
+            current.visited = true;
+            current.color = colors.nodeVisited;
+            
+            if (current === target) {
+                return true;
+            }
+            
+            draw();
+            await sleep(animationSpeed);
+            
+            const neighbors = getNeighbors(current);
+            for (const neighbor of neighbors) {
+                if (!neighbor.visited) {
+                    neighbor.parent = current;
+                    if (await dfsRecursive(neighbor, target)) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        // Helper functions
+        function getNeighbors(node) {
+            const neighbors = [];
+            graph.edges.forEach(edge => {
+                if (edge.from === node) {
+                    neighbors.push(edge.to);
+                } else if (!graph.directed && edge.to === node) {
+                    neighbors.push(edge.from);
+                }
+            });
+            return neighbors;
+        }
+
+        function findEdgeBetween(from, to) {
+            return graph.edges.find(edge => 
+                (edge.from === from && edge.to === to) || 
+                (!graph.directed && edge.from === to && edge.to === from)
+            );
+        }
+
+        async function highlightPath(node) {
+            const path = [];
+            let current = node;
+            
+            while (current) {
+                path.unshift(current);
+                current = current.parent;
+            }
+            
+            for (let i = 0; i < path.length; i++) {
+                path[i].color = colors.nodePath;
+                
+                if (i > 0) {
+                    const edge = findEdgeBetween(path[i-1], path[i]);
+                    if (edge) {
+                        edge.color = colors.edgePath;
+                        edge.highlighted = true;
+                    }
+                }
+                
+                draw();
+                await sleep(animationSpeed / 2);
+            }
+        }
+
+        function resetGraph() {
+            graph.nodes.forEach(node => node.reset());
+            graph.edges.forEach(edge => edge.reset());
+            
+            if (sourceNode) sourceNode.color = colors.nodeSelected;
+            if (targetNode) targetNode.color = colors.nodeSelected;
+        }
+
+        function resetSelection() {
+            if (sourceNode) sourceNode.color = colors.node;
+            if (targetNode) targetNode.color = colors.node;
+            sourceNode = null;
+            targetNode = null;
+            showStatus(`Selection cleared`);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // UI control functions
+        function clearGraph() {
+            graph.nodes = [];
+            graph.edges = [];
+            graph.nextId = 1;
+            sourceNode = null;
+            targetNode = null;
+            hideStatus();
+            draw();
+        }
+
+        function toggleDirected() {
+            graph.directed = true;
+            document.getElementById(`directed-toggle`).classList.add(`active`);
+            document.getElementById(`undirected-toggle`).classList.remove(`active`);
+            draw();
+        }
+
+        function toggleUndirected() {
+            graph.directed = false;
+            document.getElementById(`directed-toggle`).classList.remove(`active`);
+            document.getElementById(`undirected-toggle`).classList.add(`active`);
+            draw();
+        }
+
+        function addSampleGraph() {
+            clearGraph();
+            
+            const nodes = [
+                createNode(150, 150),
+                createNode(300, 100),
+                createNode(450, 150),
+                createNode(300, 250),
+                createNode(150, 300),
+                createNode(450, 300)
+            ];
+            
+            const edges = [
+                [0, 1], [1, 2], [2, 3], [3, 4], [4, 0], [1, 3], [2, 5], [3, 5]
+            ];
+            
+            edges.forEach(([from, to]) => {
+                createEdge(nodes[from], nodes[to]);
+            });
+            
+            sourceNode = nodes[0];
+            targetNode = nodes[5];
+            sourceNode.color = colors.nodeSelected;
+            targetNode.color = colors.nodeSelected;
+            
+            draw();
+            showStatus(`Sample graph loaded with source and target selected`);
+        }
+
+        function stopAlgorithm() {
+            // Stop any running algorithm
+            algorithm = null;
+            resetGraph();
+            draw();
+            showStatus(`Algorithm stopped`);
+        }
+
+        // Export functions
+        function exportPNG() {
+            const link = document.createElement(`a`);
+            link.download = `graph.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function exportJSON() {
+            const data = {
+                nodes: graph.nodes.map(n => ({
+                    id: n.id,
+                    x: n.x,
+                    y: n.y,
+                    label: n.label
+                })),
+                edges: graph.edges.map(e => ({
+                    from: e.from.id,
+                    to: e.to.id,
+                    weight: e.weight
+                })),
+                directed: graph.directed
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], {
+                type: `application/json`
+            });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement(`a`);
+            link.href = url;
+            link.download = `graph.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importJSON() {
+            const input = document.createElement(`input`);
+            input.type = `file`;
+            input.accept = `.json`;
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            loadGraphFromJSON(data);
+                        } catch (error) {
+                            alert(`Error loading file: ${error.message}`);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+
+        function loadGraphFromJSON(data) {
+            clearGraph();
+            
+            graph.directed = data.directed;
+            
+            // Create nodes
+            const nodeMap = new Map();
+            data.nodes.forEach(nodeData => {
+                const node = createNode(nodeData.x, nodeData.y);
+                node.id = nodeData.id;
+                node.label = nodeData.label;
+                nodeMap.set(nodeData.id, node);
+            });
+            
+            // Create edges
+            data.edges.forEach(edgeData => {
+                const from = nodeMap.get(edgeData.from);
+                const to = nodeMap.get(edgeData.to);
+                if (from && to) {
+                    const edge = new Edge(from, to, edgeData.weight);
+                    graph.edges.push(edge);
+                }
+            });
+            
+            // Update UI
+            if (graph.directed) {
+                toggleDirected();
+            } else {
+                toggleUndirected();
+            }
+            
+            draw();
+            showStatus(`Graph loaded from JSON`);
+        }
+
+        // Modal functions
+        function showTheory() {
+            document.getElementById(`theory-modal`).style.display = `block`;
+        }
+
+        function hideTheory() {
+            document.getElementById(`theory-modal`).style.display = `none`;
+        }
+
+        // Sidebar functions
+        function toggleSidebar() {
+            const sidebar = document.getElementById(`sidebar`);
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle(`show`);
+            } else {
+                sidebar.classList.toggle(`collapsed`);
+            }
+        }
+
+        // Status functions
+        function showStatus(message, type = `info`) {
+            const status = document.getElementById(`algorithm-status`);
+            status.textContent = message;
+            status.className = `algorithm-status ${type === `running` ? `status-running` : type === `complete` ? `status-complete` : ``}`;
+            status.style.display = `block`;
+        }
+
+        function hideStatus() {
+            document.getElementById(`algorithm-status`).style.display = `none`;
+        }
+
+        // Initialize app
+        window.addEventListener(`load`, () => {
+            initCanvas();
+            addSampleGraph();
+            
+            // Close modal when clicking outside
+            window.addEventListener(`click`, (e) => {
+                const modal = document.getElementById(`theory-modal`);
+                if (e.target === modal) {
+                    hideTheory();
+                }
+            });
+        });
+    </script>
+    <script src="./Graph Builder - Interactive Algorithm Visualizer_files/sdk.prd.js"></script>
+
+</body></html>
