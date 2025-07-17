@@ -3,8 +3,7 @@
 An interactive tool for visualizing graph algorithms with a clean, modern interface.  
 Интерактивный инструмент для визуализации алгоритмов на графах с современным интерфейсом.
 
-![Graph Builder Screenshot](<img width="978" height="920" alt="image" src="https://github.com/user-attachments/assets/46ebc93a-f984-4d84-b9ba-3c15c5e194dd" />
-) <!-- Add your screenshot here if available -->
+![Graph Builder Interface](image.png)
 
 ## Features / Возможности
 
@@ -88,21 +87,9 @@ An interactive tool for visualizing graph algorithms with a clean, modern interf
 4. **Теория**:
    - Нажмите "View Theory" для пояснения алгоритмов
 
-## Deployment / Развертывание
-Host on GitHub Pages by:
-1. Create a repository named `username.github.io` (or enable GitHub Pages for any repo)
-2. Upload your `index.html` and assets
-3. Enable GitHub Pages in Settings > Pages
-
-Разместите на GitHub Pages:
-1. Создайте репозиторий `username.github.io` (или включите GitHub Pages для любого репозитория)
-2. Загрузите `index.html` и ресурсы
-3. Активируйте GitHub Pages в Настройках > Pages
 
 ## Technologies / Технологии
 - Pure HTML5 Canvas (no external libraries)
 - Vanilla JavaScript
 - Modern CSS with variables
 
-## License / Лицензия
-MIT
